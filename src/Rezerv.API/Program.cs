@@ -20,6 +20,10 @@ using (var scope = app.Services.CreateScope())
 
 app.UseMiddleware<ErrorHandlingMiddleware>();
 app.UseSwagger();
-app.UseSwaggerUI(c => c.RoutePrefix = "");
+app.UseSwaggerUI(c =>
+{
+    c.RoutePrefix = "";
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Rezerv API v1");
+});
 app.MapControllers();
 app.Run();
