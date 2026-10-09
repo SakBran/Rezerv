@@ -2,44 +2,98 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Rezerv.Application.DTO;
-using Rezerv.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
+using Rezerv.Application.Common;
+using Rezerv.Application.DTO;
+using Rezerv.Application.Interfaces;
+using Rezerv.Domain.Enums;
 
 namespace Rezerv.Application.Services
 {
     public class TimetableService
     {
-        private readonly Interfaces.IApplicationDbContext _db;
-        public TimetableService(Interfaces.IApplicationDbContext db)
+        private static readonly TimeSpan TimetableCacheDuration = TimeSpan.FromSeconds(30);
+
+        private readonly IApplicationDbContext _dbContext;
+        private readonly ICacheService _cacheService;
+
+        public TimetableService(IApplicationDbContext dbContext, ICacheService cacheService)
         {
-            _db = db;
+            _dbContext = dbContext;
+            _cacheService = cacheService;
         }
+
         public async Task<List<TimetableScheduleDto>> ListAsync(int? businessId, DateOnly? date)
         {
-            var q = _db.Schedules.AsQueryable();
-            if (businessId is not null)
+            List<TimetableScheduleDto> allSchedules = await GetAllSchedulesFromCacheOrDatabaseAsync();
+
+            List<TimetableScheduleDto> filteredSchedules = new List<TimetableScheduleDto>();
+
+            foreach (TimetableScheduleDto schedule in allSchedules)
             {
-                q = q.Where(s => s.BusinessId == businessId);
-            }
-            if (date is not null)
-            {
-                var from = date.Value.ToDateTime(TimeOnly.MinValue);
-                q = q.Where(s => s.StartTime >= from && s.StartTime < from.AddDays(1));
+                if (businessId.HasValue)
+                {
+                    if (schedule.BusinessId != businessId.Value)
+                    {
+                        continue;
+                    }
+                }
+
+                if (date.HasValue)
+                {
+                    DateOnly scheduleDate = DateOnly.FromDateTime(schedule.StartTime);
+
+                    if (scheduleDate != date.Value)
+                    {
+                        continue;
+                    }
+                }
+
+                filteredSchedules.Add(schedule);
             }
 
-            return await q.OrderBy(s => s.StartTime).Select(s => new TimetableScheduleDto
+            return filteredSchedules;
+        }
+
+        private async Task<List<TimetableScheduleDto>> GetAllSchedulesFromCacheOrDatabaseAsync()
+        {
+            List<TimetableScheduleDto>? cachedSchedules =
+                await _cacheService.GetAsync<List<TimetableScheduleDto>>(CacheKeys.Timetable);
+
+            if (cachedSchedules != null)
             {
-                ScheduleId = s.Id,
-                ClassName = s.ClassName,
-                InstructorName = s.InstructorName,
-                StartTime = s.StartTime,
-                EndTime = s.EndTime,
-                AttendanceCount = s.Bookings.Count(b => b.Status == BookingStatus.Booked),
-                AvailableSlots = s.Capacity - s.Bookings.Count(b => b.Status == BookingStatus.Booked),
-                IsFull = s.Bookings.Count(b => b.Status == BookingStatus.Booked) >= s.Capacity,
-                BusinessName = s.Business.Name
-            }).ToListAsync();
+                return cachedSchedules;
+            }
+
+            List<TimetableScheduleDto> schedulesFromDatabase = await LoadAllSchedulesFromDatabaseAsync();
+
+            await _cacheService.SetAsync(CacheKeys.Timetable, schedulesFromDatabase, TimetableCacheDuration);
+
+            return schedulesFromDatabase;
+        }
+
+        private async Task<List<TimetableScheduleDto>> LoadAllSchedulesFromDatabaseAsync()
+        {
+            List<TimetableScheduleDto> schedules = await _dbContext.Schedules
+                .OrderBy(schedule => schedule.StartTime)
+                .Select(schedule => new TimetableScheduleDto
+                {
+                    ScheduleId = schedule.Id,
+                    BusinessId = schedule.BusinessId,
+                    BusinessName = schedule.Business.Name,
+                    ClassName = schedule.ClassName,
+                    InstructorName = schedule.InstructorName,
+                    StartTime = schedule.StartTime,
+                    EndTime = schedule.EndTime,
+                    AttendanceCount = schedule.Bookings.Count(booking => booking.Status == BookingStatus.Booked),
+                    AvailableSlots = schedule.Capacity
+                        - schedule.Bookings.Count(booking => booking.Status == BookingStatus.Booked),
+                    IsFull = schedule.Bookings.Count(booking => booking.Status == BookingStatus.Booked)
+                        >= schedule.Capacity
+                })
+                .ToListAsync();
+
+            return schedules;
         }
     }
 }
