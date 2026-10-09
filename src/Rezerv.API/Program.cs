@@ -1,3 +1,4 @@
+using Rezerv.API.Middleware;
 using Rezerv.Infrastructure;
 using Rezerv.Infrastructure.Persistence;
 
@@ -17,6 +18,7 @@ using (var scope = app.Services.CreateScope())
     await DbSeeder.SeedAsync(db);
 }
 
+app.UseMiddleware<ErrorHandlingMiddleware>();
 app.UseSwagger();
 app.UseSwaggerUI(c => c.RoutePrefix = "");
 app.MapControllers();
