@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Rezerv.Application.Interfaces;
 using Rezerv.Application.Services;
 using Rezerv.Infrastructure.Persistence;
+using StackExchange.Redis;
 
 namespace Rezerv.Infrastructure
 {
@@ -22,6 +23,11 @@ namespace Rezerv.Infrastructure
             services.AddSingleton<IClock, Clock>();
             services.AddScoped<PackageService>();
             services.AddScoped<TimetableService>();
+
+            var redis = config.GetConnectionString("Redis")!;
+            services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(redis));
+            services.AddSingleton<ICacheService, RedisCacheService>();
+            services.AddSingleton<IDistributedLockService, RedisDistributedLockService>();
             return services;
         }
     }
