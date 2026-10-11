@@ -1,6 +1,6 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
-COPY Rezerv.sln .
+COPY Rezerv.slnx .
 COPY src/Rezerv.Domain/Rezerv.Domain.csproj src/Rezerv.Domain/
 COPY src/Rezerv.Application/Rezerv.Application.csproj src/Rezerv.Application/
 COPY src/Rezerv.Infrastructure/Rezerv.Infrastructure.csproj src/Rezerv.Infrastructure/
