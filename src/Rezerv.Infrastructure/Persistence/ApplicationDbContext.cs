@@ -24,7 +24,7 @@ namespace Rezerv.Infrastructure.Persistence
         {
             b.Entity<UserPackage>(e =>
             {
-                e.Property(x => x.RemainingCredits).IsConcurrencyToken();   // layer 3
+                e.Property(x => x.RemainingCredits).IsConcurrencyToken();
                 e.HasIndex(x => new { x.UserId, x.BusinessId });
             });
 

@@ -1,4 +1,7 @@
+using Hangfire;
+using Hangfire.MemoryStorage;
 using Rezerv.API.Middleware;
+using Rezerv.Application.Services;
 using Rezerv.Infrastructure;
 using Rezerv.Infrastructure.Persistence;
 
@@ -8,6 +11,8 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddHangfire(c => c.UseMemoryStorage());
+builder.Services.AddHangfireServer();
 
 var app = builder.Build();
 
@@ -25,5 +30,7 @@ app.UseSwaggerUI(c =>
     c.RoutePrefix = "";
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "Rezerv API v1");
 });
+app.UseHangfireDashboard("/hangfire");
+RecurringJob.AddOrUpdate<WaitlistService>("expire-ended-waitlists", s => s.ExpireEndedAsync(), "*/5 * * * *");
 app.MapControllers();
 app.Run();
