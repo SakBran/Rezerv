@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Rezerv.Application.Interfaces;
 using StackExchange.Redis;
 
-namespace Rezerv.Application.Services
+namespace Rezerv.Infrastructure.Redis
 {
     public class RedisDistributedLockService : IDistributedLockService
     {

@@ -2,7 +2,7 @@ using System.Text.Json;
 using Rezerv.Application.Interfaces;
 using StackExchange.Redis;
 
-namespace Rezerv.Application.Services
+namespace Rezerv.Infrastructure.Redis
 {
     public class RedisCacheService : ICacheService
     {
@@ -21,7 +21,7 @@ namespace Rezerv.Application.Services
                 var v = await Db.StringGetAsync(key);
                 return v.HasValue ? JsonSerializer.Deserialize<T>(v.ToString()) : default;
             }
-            catch { return default; }   // Redis down → DB ကို သွား (fail-open)
+            catch { return default; }
         }
 
         public async Task SetAsync<T>(string key, T value, TimeSpan ttl)
