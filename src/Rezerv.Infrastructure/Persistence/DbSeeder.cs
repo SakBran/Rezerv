@@ -17,23 +17,19 @@ namespace Rezerv.Infrastructure.Persistence
             var now = DateTime.UtcNow;
             var day = now.Date.AddDays(2);
 
-
             var fit = new Business { Name = "Rezerv Fitness" };
             var zen = new Business { Name = "Zen Yoga Studio" };
             db.Businesses.AddRange(fit, zen);
-
 
             var fit10 = new Package { Business = fit, Name = "10 Class Pack", TotalCredits = 10, ValidityDays = 30, Price = 100 };
             var fit5 = new Package { Business = fit, Name = "5 Class Pack", TotalCredits = 5, ValidityDays = 14, Price = 60 };
             var zen5 = new Package { Business = zen, Name = "5 Class Pack", TotalCredits = 5, ValidityDays = 30, Price = 70 };
             db.Packages.AddRange(fit10, fit5, zen5);
 
-
             var names = new[] { "Su Su", "Kyaw Kyaw", "Maw Maw", "Aung Aung", "Ma Ma", "Ko Ko", "Hla Hla", "Thura", "Ko Oo", "Hlwan Paing", "Kyat Pha", "Nay Win" };
             var users = names.Select(n => new User { Name = n, Email = $"{n.ToLower()}@test.com" }).ToList();
             db.Users.AddRange(users);
             User U(int i) => users[i - 1];
-
 
             UserPackage W(User u, Package p, int remaining, int expiresInDays) => new()
             {
@@ -62,7 +58,6 @@ namespace Rezerv.Infrastructure.Persistence
         };
             db.UserPackages.AddRange(wallets);
 
-
             TimetableSchedule S(Business b, string cls, string ins, DateTime start, int mins, int cap) => new()
             {
                 Business = b,
@@ -87,7 +82,6 @@ namespace Rezerv.Infrastructure.Persistence
         };
             db.Schedules.AddRange(s);
 
-
             Booking B(User u, TimetableSchedule sch, UserPackage w) => new()
             {
                 User = u,
@@ -109,7 +103,6 @@ namespace Rezerv.Infrastructure.Persistence
         };
             db.Bookings.AddRange(bookings);
 
-
             WaitlistEntry WL(User u, TimetableSchedule sch, UserPackage w, int minutesAgo) => new()
             {
                 User = u,
@@ -127,7 +120,6 @@ namespace Rezerv.Infrastructure.Persistence
             );
 
             await db.SaveChangesAsync();
-
 
             foreach (var w in wallets) w.BusinessId = w.Package.BusinessId;
             await db.SaveChangesAsync();
